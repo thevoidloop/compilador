@@ -7,17 +7,8 @@ class MainProvider extends ChangeNotifier {
   late List<String> lineas;
   List<Lexema> lexemas = [];
   List<Lexema> identifier = [];
-  bool modePanic = false;
-  /*
-  RegExp ps = RegExp(r'@if|@else|@for|@while|@int|@string|@cout');
-  RegExp identificadores = RegExp(r'^[a-z][a-z0-9]*$');
-  RegExp opArit = RegExp(r'\+|-|\*|/');
-  RegExp opComp = RegExp(r'==|!=|>|<');
-  RegExp opAsig = RegExp(r'>>');
-  RegExp simbolos = RegExp(r'\||;|:|\.|,');
-  RegExp conEntera = RegExp(r'^-?\d+$');
-  RegExp conCadena = RegExp(r"^'.*'$");
-*/
+  bool modePanic = true;
+
   List<RegExp> categoriasLexicas = [
     RegExp(r'@if|@else|@for|@while|@int|@string|@cout'),
     RegExp(r'^[a-z][a-z0-9]*$'),
@@ -32,6 +23,7 @@ class MainProvider extends ChangeNotifier {
   void reset() {
     lexemas = [];
     modePanic = false;
+    identifier = [];
   }
 
   void compilar() {
@@ -58,7 +50,10 @@ class MainProvider extends ChangeNotifier {
     for (int numPalabras = 0; numPalabras < palabras.length; numPalabras++) {
       bool coincide = false;
 
-      if (palabras[numPalabras].isEmpty) continue; // Elimina blancos
+      if (palabras[numPalabras].isEmpty) continue; // Elimina vacios
+      if (palabras[numPalabras].trim().length == 0)
+        continue; // Elimina espacios en blanco
+      if (palabras[numPalabras] == '\n') continue; // Elimina saltos
 
       for (int numExpresion = 0;
           numExpresion < categoriasLexicas.length;
@@ -82,26 +77,36 @@ class MainProvider extends ChangeNotifier {
       if (!coincide) {
         modePanic = true;
         errorMessage =
-            'Error en el análisis léxico: Token no reconocido en la linea ${numLinea + 1}';
+            'Error en el análisis léxico: Token (${palabras[numPalabras]}) no reconocido en la linea ${numLinea + 1}';
       }
     }
   }
 
   void addIdentifier(Lexema lexema, int numLinea) {
     if (identifier.isEmpty) {
-      lexema.addLine(numLinea);
+      lexema.addLine(numLinea + 1);
+      addType(lexema);
       identifier.add(lexema);
       return;
     }
 
     for (Lexema element in identifier) {
       if (element.lexema == lexema.lexema) {
-        element.addLine(numLinea);
+        element.addLine(numLinea + 1);
         return;
       }
     }
-    lexema.addLine(numLinea);
+    addType(lexema);
+    lexema.addLine(numLinea + 1);
     identifier.add(lexema);
+  }
+
+  void addType(Lexema lexema) {
+    if (lexemas.isEmpty) return;
+    if ((lexemas.last.lexema.trim() == '@int') ||
+        (lexemas.last.lexema.trim() == '@string')) {
+      lexema.setTipo(lexemas.last.lexema);
+    }
   }
 
   int ultimoToken(int categoria) {

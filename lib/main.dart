@@ -46,16 +46,56 @@ class MyApp extends StatelessWidget {
             child: Column(
               children: [
                 Editor(codigoFuenteController: codigoFuenteController),
-                const SizedBox(width: 1000, child: CategoryTable()),
-                TablaSimbolos(
-                  procesado: procesado,
-                )
+                procesado.modePanic
+                    ? Container()
+                    : ResultTables(procesado: procesado),
               ],
             ),
           ),
         ),
       );
     });
+  }
+}
+
+class ResultTables extends StatelessWidget {
+  final MainProvider procesado;
+
+  const ResultTables({
+    super.key,
+    required this.procesado,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const SubTitle(msg: 'Categorias Lexicas'),
+        const SizedBox(width: 1000, child: CategoryTable()),
+        const SubTitle(msg: 'Tabla de Simbolos'),
+        TablaSimbolos(procesado: procesado),
+        const SubTitle(msg: 'Identificadores'),
+        SizedBox(width: 1000, child: IdentifierTable(procesado: procesado))
+      ],
+    );
+  }
+}
+
+class SubTitle extends StatelessWidget {
+  final String msg;
+  const SubTitle({
+    super.key,
+    required this.msg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      width: double.infinity,
+      child: Text(msg,
+          style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+    );
   }
 }
 
@@ -128,6 +168,69 @@ class TablaSimbolos extends StatelessWidget {
             Center(child: Text(element.categoria)),
             Center(child: Text(element.clase)),
             Center(child: Text("#${element.token.toString().padLeft(3, '0')}")),
+          ],
+        ),
+      );
+    }
+
+    return table;
+  }
+}
+
+class IdentifierTable extends StatelessWidget {
+  final MainProvider procesado;
+  const IdentifierTable({
+    super.key,
+    required this.procesado,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(15.0),
+      child: Table(
+        border: TableBorder.all(
+          borderRadius: BorderRadius.circular(10),
+          color: Colors.lightBlueAccent,
+        ), // Permite establecer un borde para la tabla
+        columnWidths: const <int, TableColumnWidth>{
+          0: FixedColumnWidth(200), // Permite controlar el ancho de la columna
+          1: FlexColumnWidth(),
+          2: FixedColumnWidth(200), // Ancho de columna fijo
+          3: FixedColumnWidth(300), // Ancho de columna fijo
+        },
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+        children: identifier(procesado), // Alineación vertical predeterminada
+      ),
+    );
+  }
+
+  List<TableRow> identifier(MainProvider procesado) {
+    List<TableRow> table = [];
+
+    const styleHeader = TextStyle(fontWeight: FontWeight.bold, fontSize: 16);
+
+    table.add(
+      const TableRow(
+        children: <Widget>[
+          Center(child: Text('Token', style: styleHeader)),
+          Center(child: Text('Identificador', style: styleHeader)),
+          Center(child: Text('Tipo', style: styleHeader)),
+          Center(child: Text('Incidencia', style: styleHeader)),
+        ],
+      ),
+    );
+
+    for (Lexema element in procesado.identifier) {
+      table.add(
+        TableRow(
+          children: <Widget>[
+            Center(
+                child: Text("${element.clase}"
+                    "#${element.token.toString().padLeft(3, '0')}")),
+            Center(child: Text(element.lexema)),
+            Center(child: Text(element.tipo)),
+            Center(child: Text(element.lineasToString())),
           ],
         ),
       );
