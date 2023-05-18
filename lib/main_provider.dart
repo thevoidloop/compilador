@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 
 class MainProvider extends ChangeNotifier {
   String codigoFuente = '';
+  String errorMessage = '';
   late List<String> lineas;
   List<Lexema> lexemas = [];
+  List<Lexema> identifier = [];
   bool modePanic = false;
   /*
   RegExp ps = RegExp(r'@if|@else|@for|@while|@int|@string|@cout');
@@ -19,13 +21,18 @@ class MainProvider extends ChangeNotifier {
   List<RegExp> categoriasLexicas = [
     RegExp(r'@if|@else|@for|@while|@int|@string|@cout'),
     RegExp(r'^[a-z][a-z0-9]*$'),
-    RegExp(r'\+|-|\*|/'),
-    RegExp(r'==|!=|>|<'),
+    RegExp(r'(\+|-|\*|/)'),
+    RegExp(r'^(==|!=|>|<)$'),
     RegExp(r'>>'),
-    RegExp(r'\||;|:|\.|,|\)|\(|\{|\}'),
+    RegExp(r'(\||;|:|\.|,|\)|\(|\{|\})'),
     RegExp(r'^-?\d+$'),
     RegExp(r"^'.*'$"),
   ];
+
+  void reset() {
+    lexemas = [];
+    modePanic = false;
+  }
 
   void compilar() {
     splitear();
@@ -50,22 +57,23 @@ class MainProvider extends ChangeNotifier {
 
     for (int numPalabras = 0; numPalabras < palabras.length; numPalabras++) {
       bool coincide = false;
-      if (palabras[numPalabras] == ' ') break;
-      if (palabras[numPalabras] == '') break;
+
+      if (palabras[numPalabras].isEmpty) continue; // Elimina blancos
 
       for (int numExpresion = 0;
           numExpresion < categoriasLexicas.length;
           numExpresion++) {
         if (categoriasLexicas[numExpresion].hasMatch(palabras[numPalabras])) {
           coincide = true;
+          Lexema lexema = Lexema(
+            palabras[numPalabras],
+            ultimoToken(numExpresion) + 1,
+            '${(numExpresion + 1) * 100}',
+            searchCategoria(numExpresion),
+          );
+          if (numExpresion == 1) addIdentifier(lexema, numLinea);
           lexemas.add(
-            Lexema(
-              palabras[numPalabras],
-              ultimoToken(numExpresion) + 1,
-              '${(numExpresion + 1) * 100}',
-              numLinea,
-              searchCategoria(numExpresion),
-            ),
+            lexema,
           );
         }
         if (coincide) break;
@@ -73,8 +81,27 @@ class MainProvider extends ChangeNotifier {
 
       if (!coincide) {
         modePanic = true;
+        errorMessage =
+            'Error en el análisis léxico: Token no reconocido en la linea ${numLinea + 1}';
       }
     }
+  }
+
+  void addIdentifier(Lexema lexema, int numLinea) {
+    if (identifier.isEmpty) {
+      lexema.addLine(numLinea);
+      identifier.add(lexema);
+      return;
+    }
+
+    for (Lexema element in identifier) {
+      if (element.lexema == lexema.lexema) {
+        element.addLine(numLinea);
+        return;
+      }
+    }
+    lexema.addLine(numLinea);
+    identifier.add(lexema);
   }
 
   int ultimoToken(int categoria) {
@@ -82,11 +109,8 @@ class MainProvider extends ChangeNotifier {
 
     if (lexemas.isEmpty) return 0;
     Lexema ultimo = lexemas.lastWhere(
-        (
-          lexema,
-        ) =>
-            lexema.clase == cadenaComparar,
-        orElse: () => Lexema('', 0, '', 0, ''));
+        (lexema) => lexema.clase == cadenaComparar,
+        orElse: () => Lexema('', 0, '', ''));
     return ultimo.token;
   }
 

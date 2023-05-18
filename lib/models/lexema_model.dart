@@ -3,13 +3,14 @@ class Lexema {
   final int token;
   final String clase;
   final String categoria;
-  final int linea;
+  List<int> linea = [];
 
   Lexema(
     this.lexema,
     this.token,
     this.clase,
-    this.linea,
     this.categoria,
   );
+
+  void addLine(int numLinea) => linea.add(numLinea);
 }

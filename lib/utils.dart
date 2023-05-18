@@ -9,7 +9,10 @@ class Enmarcar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-          border: Border.all(color: Colors.lightBlueAccent, width: 2)),
+          border: Border.all(
+            color: Colors.lightBlueAccent,
+          ),
+          borderRadius: BorderRadius.circular(10)),
       child: child,
     );
   }
